@@ -1,0 +1,343 @@
+---
+include:
+  - docassemble.AssemblyLine:al_package.yml
+  - docassemble.ALMassachusetts:al_massachusetts.yml
+  - docassemble.MassAccess:massaccess.yml
+---
+metadata:
+  title: |
+    Appearance of Counsel
+  short title: |
+    Appearance
+  tags:
+    - Other
+  authors:
+    - Diana Buenaños
+---
+mandatory: True
+comment: |
+  Global interview metadata
+variable name: interview_metadata["appearance_test_dabm"]
+data:
+  al_weaver_version: "1.6.3"
+  generated on: "2022-06-15"
+  title: >-
+    Appearance of Counsel
+  short title: >-
+    Appearance
+  description: |-
+    A simple appearance of counsel
+  original_form: >-
+    https://www.mass.gov/doc/appearance-of-counsel-form-jv-cr-19/download
+  allowed courts: 
+    - "Juvenile Court"
+  categories:
+    - "Juvenile"
+  typical role: "na"
+  generate download screen: True
+---
+code: |
+  interview_metadata['main_interview_key'] =  'appearance_test_dabm'
+---
+code: |
+  # This controls the default country and list of states in address field questions
+  AL_DEFAULT_COUNTRY = "US"
+---
+code: |
+  # This controls the default state in address field questions
+  AL_DEFAULT_STATE = "MA"
+---
+code: |
+  github_repo_name =  'docassemble-AppearanceTestDabm'
+---
+code: |
+  interview_short_title = "Ask the Court to accept your appearence"
+---
+code: |
+  al_form_type = "existing_case" 
+---
+objects:
+  - users: ALPeopleList.using(ask_number=True,target_number=1)
+---
+sections:
+  - review_appearance_test_dabm: Review your answers
+---
+#################### Interview order #####################
+comment: |
+  Controls order and branching logic for questions specific to this form
+id: interview_order_appearance_test_dabm
+code: |
+  # Set the allowed courts for this interview
+  allowed_courts = interview_metadata["appearance_test_dabm"]["allowed courts"]
+  nav.set_section('review_appearance_test_dabm')
+  user_role = 'na'
+  notnull
+  bbo_number
+  firm
+  set_progress(12)
+  case_name
+  docket_number
+  trial_court.division
+  set_progress(25)
+  defendants.gather()
+  attorneys.gather()
+  attorneys[0].phone_number
+  #attorneys[0].mobile_number
+  set_progress(37)
+  attorneys[0].address.address
+  set_progress(50)
+  attorneys[0].fax_number
+  set_progress(62)
+  signature_date
+  interview_order_appearance_test_dabm = True
+---
+###################### Main order ######################
+comment: |
+  This block includes the logic for standalone interviews.
+  Delete mandatory: True to include in another interview
+mandatory: True
+code: |
+  al_intro_screen
+  appearance_test_dabm_intro
+  interview_order_appearance_test_dabm
+  signature_date    
+  # Save anonymized interview statistics (customize the saved data below)
+  store_variables_snapshot(data={'zip': users[0].address.zip})    
+  appearance_test_dabm_preview_question
+  basic_questions_signature_flow    
+  attorneys[0].signature
+  appearance_test_dabm_download
+---
+comment: |
+  This question is used to introduce your interview. Please customize
+id: Appearance_of_Counsel
+continue button field: appearance_test_dabm_intro
+question: |
+  Appearance of Counsel
+subquestion: |
+  You will need X,Y and Z before starting
+---
+id: Junk fields
+question: |
+  Junk fields
+fields:
+  - "Null": notnull
+    maxlength: 8
+  - "Not applicable": not_applicable
+    maxlength: 62
+---
+id: BBO Number
+question: |
+  BBO Number
+subquestion: |
+  Please provide your BBO Number
+fields:
+  - "BBO number": bbo_number
+    datatype: number
+---
+id: Firm info
+question: |
+  Firm info
+subquestion: |
+  Please provide you Firm's name
+fields:
+  - "Firm Name": firm
+    maxlength: 65
+---
+id: Case Name
+question: |
+  Case Name
+subquestion: |
+  Please provide your Case Name
+fields:
+  - "Case name": case_name
+    maxlength: 56
+---
+id: preview appearance_test_dabm
+question: |
+  Preview your form before you sign it
+subquestion: |
+  Here is a preview of the form you will sign on the next page.   
+  
+  ${ al_court_bundle.as_pdf(key='preview') }
+
+  Click the image to open it in a new tab. Click the "Edit answers" button
+  to edit your answers.
+
+  ${ action_button_html(url_action('review_appearance_test_dabm'), label='Edit answers', color='info') }
+  
+  Remember to come back to this window to continue and sign your form.
+continue button field: appearance_test_dabm_preview_question    
+---
+code: |
+  signature_fields = ['attorneys[0].signature']
+---
+code: |
+  # This is a placeholder for the addresses that will be searched
+  # for matching address to court. Edit if court venue is based on 
+  # a different address than the user's
+  addresses_to_search = [user.address for user in users]
+---
+id: appearance test dabm review screen
+event: review_appearance_test_dabm
+question: |
+  Review your answers
+review:
+  - Edit: notnull
+    button: |
+      **Null**:
+      ${ notnull }
+  - Edit: case_name
+    button: |
+      **Case name**:
+      ${ case_name }
+  - Edit: not_applicable
+    button: |
+      **Not applicable**:
+      ${ not_applicable }
+  - Edit: bbo_number
+    button: |
+      **BBO number**:
+      ${ bbo_number }
+  - Edit: firm
+    button: |
+      **Firm Name**:
+      ${ firm }
+  - Edit: docket_number
+    button: |
+      **docket_number**:
+      ${ docket_number }
+  - Edit: trial_court
+    button: |
+      **trial_court**
+
+      % if defined("trial_court.division"):
+      * division: ${ trial_court.division }
+      % endif
+  - Edit: defendants.revisit
+    button: |
+      **Defendants**
+
+      % for item in defendants:
+        * ${ item }
+      % endfor
+  - Edit: attorneys.revisit
+    button: |
+      **Attorneys**
+
+      % for item in attorneys:
+        * ${ item }
+      % endfor
+  - Edit: signature_date
+    button: |
+      **signature_date**:
+      ${ signature_date }
+---
+continue button field: defendants.revisit
+question: |
+  Edit defendants
+subquestion: |
+  ${ defendants.table }
+
+  ${ defendants.add_action() }
+---
+table: defendants.table
+rows: defendants
+columns:
+  - Name: |
+      row_item.name.full() if defined("row_item.name.first") else ""
+edit:
+  - name.first
+confirm: True
+
+---
+continue button field: attorneys.revisit
+question: |
+  Edit attorneys
+subquestion: |
+  ${ attorneys.table }
+
+  ${ attorneys.add_action() }
+---
+table: attorneys.table
+rows: attorneys
+columns:
+  - Name: |
+      row_item.name.full() if defined("row_item.name.first") else ""
+  - Phone number: |
+      row_item.phone_number if defined("row_item.phone_number") else ""
+  - Address: |
+      row_item.address.block() if defined("row_item.address.zip") else ""
+  - Mobile number: |
+      row_item.mobile_number if defined("row_item.mobile_number") else ""
+  - Fax number: |
+      row_item.fax_number if defined("row_item.fax_number") else ""
+  - Signature: |
+      row_item.signature if defined("row_item.signature") else ""
+edit:
+  - name.first
+  - phone_number
+  - address.zip
+  - mobile_number
+  - fax_number
+  - signature
+confirm: True
+
+---
+id: download appearance_test_dabm
+event: appearance_test_dabm_download
+question: |
+  All done
+subquestion: |
+  Thank you ${users}. Your form is ready to download and deliver.
+  
+  View, download and send your form below. Click the "Edit answers" button to fix any mistakes.
+
+  ${ action_button_html(url_action('review_appearance_test_dabm'), label='Edit answers', color='info') }
+  
+  
+  ${ al_user_bundle.download_list_html() }
+  
+
+  ${ al_user_bundle.send_button_html(show_editable_checkbox=False) }
+
+progress: 100
+---
+objects:
+  - appearance_test_dabm_post_interview_instructions: ALDocument.using(title="Instructions", filename="appearance_test_dabm_next_steps.docx", enabled=True, has_addendum=False, default_overflow_message=AL_DEFAULT_OVERFLOW_MESSAGE)
+  - appearance_test_dabm_attachment: ALDocument.using(title="Appearance of Counsel", filename="appearance_test_dabm.pdf", enabled=True, has_addendum=False, default_overflow_message=AL_DEFAULT_OVERFLOW_MESSAGE)
+---
+objects:
+  - al_user_bundle: ALDocumentBundle.using(elements=[appearance_test_dabm_post_interview_instructions,appearance_test_dabm_attachment], filename="appearance_test_dabm.pdf_package.pdf", title="All forms to download for your records", enabled=True)
+  - al_court_bundle: ALDocumentBundle.using(elements=[appearance_test_dabm_attachment], filename="appearance_test_dabm.pdf_package.pdf", title="All forms to download for your records", enabled=True)
+---
+attachments:
+  - name: appearance test dabm post interview instructions
+    filename: Post-interview-instructions     
+    variable name: appearance_test_dabm_post_interview_instructions[i]        
+    skip undefined: True
+    docx template file: appearance_test_dabm_next_steps.docx
+  - name: appearance test dabm attachment
+    filename: appearance_test_dabm.pdf     
+    variable name: appearance_test_dabm_attachment[i]        
+    skip undefined: True
+    pdf template file: appearance_test_dabm.pdf
+    fields:
+      - "docket_number": ${ docket_number }
+      - "trial_court_division": ${ trial_court.division }
+      - "defendants": ${ defendants }
+      - "attorneys1_name": ${ attorneys[0] }
+      - "attorneys1_phone_number": ${ attorneys[0].phone_number }
+      - "attorneys1_address_address": ${ attorneys[0].address.address }
+      - "attorneys1_mobile_number": ${ attorneys[0].mobile_number }
+      - "attorneys1_address_city": ${ attorneys[0].address.city }
+      - "attorneys1_address_state": ${ attorneys[0].address.state }
+      - "attorneys1_address_zip": ${ attorneys[0].address.zip }
+      - "attorneys1_fax_number": ${ attorneys[0].fax_number }
+      - "signature_date": ${ signature_date }
+      - "attorneys1_signature": ${ attorneys[0].signature_if_final(i) }
+      - "null": ${ notnull }
+      - "case_name": ${ case_name }
+      - "not_applicable": ${ not_applicable }
+      - "bbo_number": ${ "{:,.2f}".format(bbo_number) }
+      - "firm": ${ firm }
